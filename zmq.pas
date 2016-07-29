@@ -6,6 +6,10 @@ interface
 
 uses ctypes;
 
+// #define ZMQ_PULL 7
+const ZMQ_PULL: Cint = 7;
+
+// #define ZMQ_PUSH 8
 const ZMQ_PUSH: Cint = 8;
 
 // int zmq_bind (void *socket, const char *endpoint);
@@ -21,7 +25,7 @@ function zmq_ctx_new(): Pointer; cdecl; external 'libzmq';
 function zmq_ctx_term(Context: Pointer): Cint; cdecl; external 'libzmq';
 
 // int zmq_send (void *socket, void *buf, size_t len, int flags);
-function zmq_send(Socket: Pointer; Buffer: Pointer; Len: Csize_t; Flags: Cint): Cint; cdecl; external 'libzmq';
+function zmq_send(Socket: Pointer; Buffer: PAnsiChar; Len: Csize_t; Flags: Cint): Cint; cdecl; external 'libzmq';
 
 // void *zmq_socket (void *context, int type);
 function zmq_socket(Context: Pointer; SocketType: Cint): Pointer; cdecl; external 'libzmq';

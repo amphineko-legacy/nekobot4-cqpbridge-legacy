@@ -1,47 +1,66 @@
 unit bridge;
 
+{$MODE DELPHI}
+
 interface
 
-uses ctypes, sysutils, windows, zmq;
+uses classes, cqp, fpjson, jsonparser, zmq;
 
-procedure InitializeBridge;
-procedure UninitializeBridge;
+procedure InitializeBridge(ConfigFilename: AnsiString);
+procedure DeinitializeBridge;
 
-function CreateBridge: Cint;
-procedure DestroyBridge;
-
-procedure PushGroupMessage(GroupId: AnsiString; UserId: AnsiString; Content: AnsiString);
+procedure EnableBridge;
+procedure DisableBridge;
 
 implementation
 
-var ZmqContext, PushSocket: Pointer;
+var ZmqContext: Pointer = nil;
+var PushSocket, RecvSocket: Pointer;
+var PushSocketEndpoint, RecvSocketEndpoint: AnsiString;
 
-procedure InitializeBridge;
+function LoadFileToStr(const FileName: AnsiString): AnsiString;
+    var FileStream : TFileStream;
 begin
-    ZmqContext := zmq_ctx_new();
+    FileStream := TFileStream.Create(FileName, fmOpenRead);
+    try
+        if FileStream.Size > 0 then begin
+            SetLength(Result, FileStream.Size);
+            FileStream.Read(Pointer(Result)^, FileStream.Size);
+        end;
+    finally
+        FileStream.Free;
+    end;
 end;
 
-procedure UninitializeBridge;
+procedure InitializeBridge(ConfigFilename: AnsiString);
+    var Config: TJSONObject;
+begin
+    Config := TJSONObject(GetJSON(LoadFileToStr(ConfigFilename)));
+    PushSocketEndpoint := Config.Get('PushSocketEndpoint');
+    SendCQPLog(CQLOG_INFO, 'PushSocketEndpoint = ' + PushSocketEndpoint);
+    RecvSocketEndpoint := Config.Get('RecvSocketEndpoint');
+    SendCQPLog(CQLOG_INFO, 'RecvSocketEndpoint = ' + RecvSocketEndpoint);
+
+    ZmqContext := zmq_ctx_new();
+    SendCQPLog(CQLOG_INFO, 'ZeroMQ and sockets are ready');
+end;
+
+procedure DeinitializeBridge;
 begin
     zmq_ctx_term(ZmqContext);
+    SendCQPLog(CQLOG_INFO, 'ZeroMQ and sockets were destroyed');
 end;
 
-function CreateBridge: Cint;
-    var Endpoint: AnsiString;
+procedure EnableBridge;
 begin
-    PushSocket := zmq_socket(ZmqContext, ZMQ_PUSH);
-    Endpoint := 'tcp://0.0.0.0:5371';
-    zmq_bind(PushSocket, PAnsiChar(Endpoint));
+    // TODO: bind push socket
+    // TODO: connect recv socket
 end;
 
-procedure DestroyBridge;
+procedure DisableBridge;
 begin
-    zmq_close(PushSocket);
-end;
-
-procedure PushGroupMessage(GroupId: AnsiString; UserId: AnsiString; Content: AnsiString);
-begin
-    zmq_send(PushSocket, PAnsiChar(Content), StrLen(PAnsiChar(Content)), 0);
+    // TODO: destroy push socket
+    // TODO: destroy recv socket
 end;
 
 end.

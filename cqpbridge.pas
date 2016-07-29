@@ -5,84 +5,76 @@ library cqpbridge;
 
 // External Libraries
 
-uses bridge, consts, cqp, ctypes, sysutils, windows;
+uses bridge, cqp, ctypes, sysutils, windows;
+
+// Constants
+
+const AppName: AnsiString = 'moe.futa.nekobot4.cqpbridge';
+const MaxDllFilename: DWORD = 512;
 
 // Local variables
 
-var AppInfo: AnsiString;
-var AppSession: int32;
-var BridgeState: Boolean = False;
-var ConsoleState: Boolean;
+var AppInfo: AnsiString;        // Persistent memory for pointer passing
 
 // Plugin Initialization
 
+// CQEVENT(const char*, AppInfo, 0)()
 function GetAppInfo(): PAnsiChar; stdcall;
 begin
-    AppInfo := '9,moe.futa.nekobot4.cqpbridge';
+    AppInfo := '9,' + AppName;
     Exit(PAnsiChar(AppInfo));
 end;
 
-function SetAppSession(CurrentSession: int32): int32; stdcall;
+// CQEVENT(int32_t, Initialize, 4)(int32_t current_code) {
+function SetAppSession(CurrentSession: Cint32): Cint32; stdcall;
 begin
-    AppSession := CurrentSession;
+    SetCQPSession(CurrentSession);
     Exit(EVENT_IGNORE);
 end;
 
 // Basic Events
 
-function OnPluginEnable(): int32; stdcall;
-    var ErrorCode: Cint;
-    var Error: AnsiString;
+// CQEVENT(int32_t, __eventEnable, 0)()
+function OnPluginEnable(): Cint32; stdcall;
 begin
-    ErrorCode := CreateBridge();
-    Error := 'PushSocket bound, Error=' + IntToStr(ErrorCode);
-    MessageBoxA(0, PAnsiChar(Error), nil, 0);
-    BridgeState := True;
-end;
-
-function OnPluginDisable(): int32; stdcall;
-begin
-    // DestroyBridge();
-    BridgeState := False;
-end;
-
-function OnHostStart(): int32; stdcall;
-    var LastError: AnsiString;
-begin
-    if AllocConsole() = False then
-    begin
-        ConsoleState := False;
-        LastError := 'Failed to create console, GetLastError=' + IntToStr(GetLastError());
-        MessageBox(0, PAnsiChar(LastError), nil, 0);
-    end else
-        ConsoleState := True;
-    InitializeBridge();
+    // EnableBridge();
     Exit(EVENT_IGNORE);
 end;
 
-function OnHostExit(): int32; stdcall;
+// CQEVENT(int32_t, __eventDisable, 0)()
+function OnPluginDisable(): Cint32; stdcall;
 begin
-    if ConsoleState then
-        FreeConsole();
-    if BridgeState then
-        OnPluginDisable();
+    // DisableBridge();
+    Exit(EVENT_IGNORE);
+end;
+
+// CQEVENT(int32_t, __eventStartup, 0)()
+function OnHostStart(): Cint32; stdcall;
+    var DllPath: AnsiString;
+    var PFilename: PAnsiChar;
+    var PFilenameSize: DWORD;
+begin
+    SendCQPLog(CQLOG_INFO, 'This is CQPBridge loading for you');
+
+    PFilenameSize := MaxDllFilename * SizeOf(AnsiChar);
+    PFilename := GetMem(PFilenameSize);
+    GetModuleFileNameA(0, PFilename, PFilenameSize);
+    DllPath := ExtractFilePath(PFilename) + 'cqpbridge.json';
+
+    SendCQPLog(CQLOG_INFO, 'CQPBridge config located at ' + AnsiString(DllPath));
+    InitializeBridge(DllPath);
+    Exit(EVENT_IGNORE);
+end;
+
+// CQEVENT(int32_t, __eventExit, 0)()
+function OnHostExit(): Cint32; stdcall;
+begin
+    SendCQPLog(CQLOG_INFO, 'This is CQPBridge unloading, bye');
+    DeinitializeBridge();
     Exit(EVENT_IGNORE);
 end;
 
 // Messages
-
-function OnGroupMessage(SubType: int32; Timestamp: int32; GroupId: int64; UserId: int64; AnonymousNickPtr: PAnsiChar; MessagePtr: PAnsiChar; font: int32): int32; stdcall;
-    var RawAnonymousNick: AnsiString;
-    var RawMessage: AnsiString;
-    var AnonymousNick: WideString;
-    var Message: AnsiString;
-    var Response: AnsiString;
-begin
-    Message := AnsiString(MessagePtr);
-    PushGroupMessage(IntToStr(GroupId), IntToStr(UserId), Message);
-    WriteLn(Message);
-    Exit(EVENT_BLOCK);
-end;
 
 // Function Exporting
 
@@ -94,7 +86,5 @@ exports OnPluginDisable name '_eventDisable';
 
 exports OnHostStart name '_eventStartup';
 exports OnHostExit name '_eventExit';
-
-exports OnGroupMessage name '_eventGroupMsg';
 
 end.
