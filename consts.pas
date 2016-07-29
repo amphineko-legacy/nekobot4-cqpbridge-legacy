@@ -5,10 +5,16 @@ unit consts;
 
 interface
 
+uses ctypes, windows;
+
+// Codepage
+
+const CQP_DEFAULT_CODEPAGE: Cardinal = 936; // GB2312
+
 // Event Return Codes
 
-const EVENT_IGNORE: Cardinal = 0;
-const EVENT_BLOCK: Cardinal = 1;
+const EVENT_IGNORE: Cint32 = 0;
+const EVENT_BLOCK: Cint32 = 1;
 
 implementation
 
