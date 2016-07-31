@@ -2,7 +2,7 @@ unit cqp;
 
 interface
 
-uses ctypes;
+uses ctypes, sysutils;
 
 // Event Return Codes
 
@@ -33,9 +33,13 @@ const CQLOG_FATAL: Cint32 = 40;
 // CQAPI(int32_t) CQ_addLog(int32_t AuthCode, int32_t priority, const char *category, const char *content);
 function CQ_addLog(AuthCode: Cint32; priority: Cint32; category: PAnsiChar; content: PAnsiChar): Cint32; stdcall; external 'cqp';
 
+// CQAPI(int32_t) CQ_sendGroupMsg(int32_t AuthCode, int64_t groupid, const char *msg);
+function CQ_sendGroupMsg(AuthCode: Cint32; groupid: Cint64; msg: PAnsiChar): Cint32; stdcall; external 'cqp';
+
 // CQP Wrapped API
 
 procedure SendCQPLog(LogLevel: Cint32; Content: AnsiString);
+procedure SendGroupMessage(GroupId: AnsiString; Content: AnsiString);
 procedure SetCQPSession(Session: Cint32);
 
 implementation
@@ -46,6 +50,11 @@ var DefaultCategory: AnsiString = 'CQPBridge';
 procedure SendCQPLog(LogLevel: Cint32; Content: AnsiString);
 begin
     CQ_addLog(CurrentSession, LogLevel, PAnsiChar(DefaultCategory), PAnsiChar(Content));
+end;
+
+procedure SendGroupMessage(GroupId: AnsiString; Content: AnsiString);
+begin
+    CQ_sendGroupMsg(CurrentSession, StrToInt(GroupId), PAnsiChar(Content));
 end;
 
 procedure SetCQPSession(Session: Cint32);

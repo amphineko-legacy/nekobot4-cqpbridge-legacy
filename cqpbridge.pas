@@ -3,6 +3,8 @@ library cqpbridge;
 // Copyright (c) 2016 Naoki Rinmous
 // This file or snippet of code was released under MIT license.
 
+{$MODE DELPHI}
+
 // External Libraries
 
 uses bridge, cqp, ctypes, sysutils, windows;
@@ -37,14 +39,14 @@ end;
 // CQEVENT(int32_t, __eventEnable, 0)()
 function OnPluginEnable(): Cint32; stdcall;
 begin
-    // EnableBridge();
+    EnableBridge();
     Exit(EVENT_IGNORE);
 end;
 
 // CQEVENT(int32_t, __eventDisable, 0)()
 function OnPluginDisable(): Cint32; stdcall;
 begin
-    // DisableBridge();
+    DisableBridge();
     Exit(EVENT_IGNORE);
 end;
 
@@ -76,6 +78,13 @@ end;
 
 // Messages
 
+// CQEVENT(int32_t, __eventGroupMsg, 36)(int32_t subType, int32_t sendTime, int64_t fromGroup, int64_t fromQQ, const char *fromAnonymous, const char *msg, int32_t font)
+function OnGroupMessage(SubType: Cint32; Timestamp: Cint32; GroupId: Cint64; UserId: Cint64; PAnonymousNick: PAnsiChar; PMessage: PAnsiChar; Font: Cint32): Cint32; stdcall;
+begin
+    PushGroupMessage(IntToStr(GroupId), IntToStr(UserId), AnsiString(PMessage), AnsiString(PAnonymousNick));
+    Exit(EVENT_BLOCK);
+end;
+
 // Function Exporting
 
 exports GetAppInfo name 'AppInfo';
@@ -86,5 +95,7 @@ exports OnPluginDisable name '_eventDisable';
 
 exports OnHostStart name '_eventStartup';
 exports OnHostExit name '_eventExit';
+
+exports OnGroupMessage name '_eventGroupMsg';
 
 end.
