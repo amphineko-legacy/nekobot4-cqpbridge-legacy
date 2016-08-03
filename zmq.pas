@@ -1,5 +1,8 @@
 unit zmq;
 
+// Copyright (c) 2016 Naoki Rinmous
+// This file or snippet of code was released under MIT license.
+
 {$MACRO ON}
 
 interface
