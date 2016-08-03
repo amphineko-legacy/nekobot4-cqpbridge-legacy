@@ -143,6 +143,7 @@ procedure PushGroupMessage(GroupId: AnsiString; UserId: AnsiString; Message: Ans
 begin
     Packet := TJSONObject.Create([]);
     try
+        Packet.Strings['type'] := 'group';
         Packet.Strings['group'] := GroupId;
         Packet.Strings['user'] := UserId;
         Packet.Strings['content'] := Message;
